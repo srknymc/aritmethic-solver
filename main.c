@@ -20,7 +20,7 @@ val *values;
 int ValIndex=0;
 Stack* createStack();
 bool isFull(Stack*);
-bool isEmpty();
+bool isEmpty(Stack*);
 void pushI(Stack*,int);
 void pushC(Stack*,char);
 void infix2postfix(char*);
@@ -43,7 +43,8 @@ void getDataFromFile(char *file){
 	char buffer[255];
 	while(fgets(buffer,255,f)!=NULL)
 	{
-		printf(" \nPOSTFIX FORM.. \n%.*s",4,buffer);
+		printf("*******INPUT LINE BEGIN***********\nInfixform: %s",buffer);
+		printf("\nPOSTFIX FORM: %.*s",4,buffer);
 		infix2postfix(buffer);
 		memset(buffer, 0, sizeof(buffer));
 	}
@@ -65,10 +66,10 @@ bool isEmpty(Stack* s){
 	return s->top==-1 ? true : false;
 }
 
-void pushC(Stack *s,char val){
+void pushC(Stack *s,char val){ // push char to  Stack
 	s->arr[++s->top]=val;
 }
-int priority(char c)
+int priority(char c) //define priority of symbols
 {
     if(c == '(')
         return 0;
@@ -77,7 +78,7 @@ int priority(char c)
     if(c == '*' || c == '/')
         return 2;
 }
-char popC(Stack* s){
+char popC(Stack* s){ //pop char from Stack
 	if(!isEmpty(s)){
 		return s->arr[s->top--];
 	}
@@ -95,29 +96,26 @@ void infix2postfix(char *buffer){
 	e=strtok(buffer,"=");
 	a=e[0];
 	e=strtok(NULL," ");
-    while(e[0] != ';')
+    while(e[0] != ';') // loop till end of line
     {
-    	if(isdigit(e[0])){
+    	if(isdigit(e[0])){ //if input is digit print it
     		sprintf(postfixForm,"%s %s",postfixForm,e);
 		}
-        else if(isalnum(e[0])){
+        else if(isalnum(e[0])){ //if input comes from alphebet print it
         	sprintf(postfixForm,"%s %s",postfixForm,e);
         	
 		}
             
-        else if(e[0] == '(')
+        else if(e[0] == '(') // if ( push it
             pushC(s,e[0]);
-        else if(e[0] == ')')
+        else if(e[0] == ')') // if ) pop till == (
         {
             while((x = popC(s)) != '(')
                 sprintf(postfixForm,"%s %c",postfixForm,x);
         }
-        else if(e==';')
-        {
-		}
         else
         {
-        	if(isEmpty(s)){
+        	if(isEmpty(s)){ //if it symbol and stack is empty push it else check priority
         		pushC(s,e[0]);
 			}
 			else{
@@ -127,14 +125,14 @@ void infix2postfix(char *buffer){
 			}
             
         }
-      	e=strtok(NULL," ");
+      	e=strtok(NULL," "); // pass the next value
     }
-    while(s->top != -1)
+    while(s->top != -1) // pop all remaining data from stack
     {
     	sprintf(postfixForm,"%s %c",postfixForm,popC(s));
     }
    	printf("%s\n",postfixForm);
-	solvePostfixForm(postfixForm,a);
+	solvePostfixForm(postfixForm,a); // solve postfix
 
 }
 void solvePostfixForm(char *p,char name){
@@ -143,48 +141,61 @@ void solvePostfixForm(char *p,char name){
 		stInt=(StackInt*)calloc(sizeof(StackInt),size_s);
 	stInt->arr=(int*)calloc(sizeof(int),size_s);
 	stInt->top=-1;
-	static int indexVals=0;
 	char* token=strtok(p," ");
 	while(token!=NULL){
-		if(isdigit(token[0])){
+		int y;
+		
+		if(isdigit(token[0])){ //if its digit push to stackInt
 			pushint(atoi(token),stInt);
 		}
 		else{
-			if(isalnum(token[0])){
+			if(isalnum(token[0])){ //if its var find value and push it
 				pushint(values[findVal(token[0])].value,stInt);
 			}
-			else{
-				if(token[0]=='*'){
+			else{ // if its symbol pop 2 data and push result
+				if(token[0]=='*'){ 
 					int result=popint(stInt);
 					result*=popint(stInt);
 					pushint(result,stInt);
 				}
 				else if(token[0]=='/'){
-					pushint((popint(stInt)/popint(stInt)),stInt);
+					int tmp=popint(stInt);
+					pushint(popint(stInt)/tmp,stInt);
 				}
 				else if(token[0]=='-'){
-					pushint((popint(stInt)-popint(stInt)),stInt);
+					int tmp=popint(stInt);
+					pushint(popint(stInt)-tmp,stInt);
 				}
 				else if(token[0]=='+'){
 					pushint((popint(stInt)+popint(stInt)),stInt);
 				}
 			}
 		}
+		printStackInt(stInt); // print stack status every step
+		puts("\n");
 		token=strtok(NULL," ");
 		
 	}
 	val v;
 	v.name=name;
 	v.value=popint(stInt);
-	values[ValIndex++]=v;
-	printf("\nPOSTFIX RESULT:\n");
+	int f=findVal(v.name);
+	if(f!=-1){ //if value already exist change it else add new
+		values[f]=v;
+	}
+	else
+		values[ValIndex++]=v;
+	printf("POSTFIX RESULT:\n");
 	printf("%c= %d\n",name,v.value);
+	puts("*******INPUT LINE END*************\n");
 }
 int findVal(char c){
 	int i=0;
-	while(values[i].name!=c){
+	while(values[i].name!=c && i<size_s){
 	i++;	
 	}
+	if(i>=size_s)
+		return -1;
 	return i;
 }
 void pushint(int val,StackInt *stInt){
@@ -194,4 +205,11 @@ int popint(StackInt *stInt){
 	if(stInt->top!=-1)
 		return stInt->arr[stInt->top--];
 	return -1;
+}
+void printStackInt(StackInt *s){
+	int y;
+		puts("Stack: ");
+		for(y=0;y<=s->top;y++){
+			printf("%d | ",s->arr[y]);
+		}
 }
